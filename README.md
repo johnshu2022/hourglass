@@ -2,12 +2,12 @@
 
 A responsive, browser-based work-hours tracker built with HTML, CSS, and JavaScript. It records shifts and breaks, calculates net hours for the day, week, and month, displays a seven-day chart, and imports or exports time-card data as CSV or PDF.
 
-This package is Hourglass build 34. The `docs` directory is the single website source used by both GitHub Pages and the Podman container. GitHub Pages publishes it directly from the `main` branch without a repository-managed deployment workflow or Jekyll build.
+This package is Hourglass build 36. The `docs` directory is the single website source used by both GitHub Pages and the Podman container. GitHub Pages publishes it directly from the `main` branch without a repository-managed deployment workflow or Jekyll build.
 
 ## GitHub Pages
 
-1. Remove any old `.github/workflows` directory and any Jekyll files listed in `DEPLOYMENT-CLEANUP.md`. Uploading a ZIP does not delete old repository files.
-2. Put the complete project at the root of your GitHub repository.
+1. Extract the deployment ZIP first: GitHub does not automatically unzip uploaded archives.
+2. Put the extracted files (including `docs/`, `scripts/`, and `.nojekyll`) at the root of your GitHub repository. Review the changes before committing.
 3. Commit and push the files to the `main` branch.
 4. Open the repository's **Settings**, then **Pages**.
 5. Under **Build and deployment**, set **Source** to **Deploy from a branch**.
@@ -92,3 +92,19 @@ podman run --name hourglass -p 8080:8080 --read-only \
 ```
 
 The same `compose.yaml` and `Dockerfile` also work with Docker by replacing `podman` with `docker` in these commands.
+
+## Build 35 — optional per-job daily quarter-hour rounding
+
+In **Settings → Jobs**, enable **Round this job’s daily total to the nearest 15 minutes** for individual jobs. It is off by default for existing and newly created jobs. All net shifts with the same local work date and exact job name are combined **before** rounding. 0–7 extra minutes rounds down; 8–14 rounds up. Multiple jobs and dates are never merged for rounding.
+
+The Dashboard Today/Week/Month totals and its seven-day chart use reported (rounded-where-enabled) minutes. Time entries shows an exact shift history plus a monthly reported total, the unrounded original, and a per-day/job breakdown. PDF reports show the daily rounded net for single-shift days, along with a smaller exact value. Multiple shifts for the same job/date remain individually exact, with a separate rounded daily total shown once. Shift History follows the same display rule. CSV exports always stay exact.
+
+**Important:** Rounding affects reporting only, not pay. Awaiting-payment hours, pay estimates, payment reconciliation, and stored original shifts remain exact. This prevents dividing a single day's rounding adjustment inconsistently across different paychecks. Per-job settings persist in existing local profile settings and round-trip in full backups. Rounding enabled for a job does not change previously recorded times and can be disabled without any data loss.
+
+Run `node scripts/validate.mjs` and `node --test tests/*.test.js` before committing. Publish `main` → `/docs` in GitHub Pages as before.
+
+## Build 36 — daily rounded values in reports
+
+In Shift History and PDF reports, days with a single shift display that day’s **rounded net hours** as the primary value and show its exact recorded hours underneath. For days with multiple shifts at the same job, each individual shift retains its exact net time and the rounded daily total is shown **once per date/job** to avoid double-counting. Report summaries show the sum of the individual displayed daily totals, the original exact sum, and the rounding adjustment.
+
+Clock-in and clock-out times, unpaid breaks, CSV exports, full backups, and payment estimates are **unchanged**. In Settings → Jobs, the per-job rounding checkbox still controls whether the daily total is rounded. All changes are compatible with GitHub Pages (`main` → `/docs`).

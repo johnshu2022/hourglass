@@ -7,7 +7,7 @@
   <meta name="referrer" content="no-referrer">
   <meta name="description" content="Record paychecks and link them to Hourglass shifts.">
   <title>Hourglass — Payments</title>
-  <link rel="stylesheet" href="styles.css?v=33">
+  <link rel="stylesheet" href="styles.css?v=35">
 </head>
 <body>
   <header class="site-header">
@@ -40,7 +40,7 @@
 
     <section class="metric-grid payment-metrics" aria-label="Payment summary">
       <article class="metric-card awaiting-card">
-        <span>Awaiting payment</span>
+        <span>Awaiting payment (exact)</span>
         <strong id="payment-awaiting-hours">0.00h</strong>
         <small id="payment-awaiting-pay">$0.00 expected gross</small>
       </article>
@@ -108,7 +108,7 @@
       <aside class="panel payment-guidance">
         <p class="eyebrow">How comparison works</p>
         <h2>Compare gross with gross.</h2>
-        <p>Expected gross is calculated from the selected shifts and job wage. Compare it with the paycheck’s reported gross amount—not the net deposit after taxes and deductions.</p>
+        <p>Expected gross uses exact shift minutes and job wages, without daily reporting rounding. Compare it with the paycheck’s reported gross amount—not the net deposit after taxes and deductions.</p>
         <p>A difference is a review flag, not automatic proof of an incorrect paycheck.</p>
       </aside>
     </section>
@@ -142,7 +142,8 @@
     </form>
   </dialog>
 
-  <script src="shared.js?v=24"></script>
+  <script src="daily-rounding.js?v=1"></script>
+  <script src="shared.js?v=35"></script>
   <script src="profile-ui.js?v=22"></script>
   <script src="payments.js?v=2"></script>
 </body>

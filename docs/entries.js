@@ -167,6 +167,33 @@
   }
 
   function renderHistory() {
+    const monthShifts = H.getShifts().filter(function (shift) {
+      return !monthFilter.value || shift.date.startsWith(monthFilter.value);
+    });
+    const daily = H.getDailyJobTotals(monthShifts, settings);
+    const dailyByKey = new Map(daily.map(function (day) { return [JSON.stringify([day.date, day.job]), day]; }));
+    const shownDailyTotals = new Set();
+    const exact = daily.reduce(function (sum, day) { return sum + day.actualMinutes; }, 0);
+    const reported = daily.reduce(function (sum, day) { return sum + day.displayMinutes; }, 0);
+    const adjustment = reported - exact;
+    document.getElementById('history-reported-hours').textContent = H.formatMinutes(reported);
+    document.getElementById('history-exact-hours').textContent = H.formatMinutes(exact);
+    document.getElementById('history-adjustment').textContent = (adjustment > 0 ? '+' : adjustment < 0 ? '−' : '') + Math.abs(adjustment) + 'm';
+    const dailyList = document.getElementById('history-daily-totals');
+    dailyList.textContent = '';
+    daily.forEach(function (day) {
+      const row = document.createElement('div');
+      row.className = 'daily-job-item';
+      const heading = document.createElement('span');
+      heading.textContent = H.formatDate(day.date, { month: 'short', day: 'numeric' }) + ' · ' + (day.job || 'Unassigned');
+      const total = document.createElement('strong');
+      total.textContent = H.formatMinutes(day.displayMinutes) + (day.roundingEnabled ? ' rounded' : ' exact');
+      const original = document.createElement('small');
+      original.textContent = 'Recorded ' + H.formatMinutes(day.actualMinutes);
+      row.append(heading, total, original);
+      dailyList.appendChild(row);
+    });
+    if (!daily.length) dailyList.textContent = 'No shifts recorded for this month.';
     const tbody = document.getElementById('history-body');
     const empty = document.getElementById('history-empty');
     const filtered = H.getShifts().map(function (shift) { return { type: 'shift', record: shift }; })
@@ -204,10 +231,29 @@
       breaks.textContent = recordedBreakMinutes > 0 ? H.formatMinutes(recordedBreakMinutes) : 'None';
       const net = document.createElement('td');
       const netValue = document.createElement('strong');
-      netValue.textContent = H.formatDecimalHours(H.shiftMinutes(shift));
+      const dayKey = JSON.stringify([shift.date, String(shift.job || '').trim()]);
+      const day = dailyByKey.get(dayKey);
+      const oneShiftDay = day && day.shiftCount === 1;
+      const exactMinutes = H.shiftMinutes(shift);
+      netValue.textContent = H.formatDecimalHours(oneShiftDay ? day.displayMinutes : exactMinutes);
       const netLabel = document.createElement('span');
-      netLabel.textContent = 'decimal hours';
+      netLabel.textContent = oneShiftDay && day.roundingEnabled ? 'rounded daily hours' :
+        oneShiftDay ? 'exact daily hours' : 'exact shift hours';
       net.append(netValue, netLabel);
+      if (oneShiftDay && day.roundingEnabled) {
+        const original = document.createElement('small');
+        original.className = 'net-exact-note';
+        original.textContent = 'Exact ' + H.formatDecimalHours(exactMinutes) + ' hours';
+        net.appendChild(original);
+      } else if (day && day.shiftCount > 1 && !shownDailyTotals.has(dayKey)) {
+        // Show the rounded day total once; do not distribute it across shifts.
+        const dayTotal = document.createElement('small');
+        dayTotal.className = 'net-exact-note';
+        dayTotal.textContent = 'Daily total ' + H.formatDecimalHours(day.displayMinutes) + ' hours' +
+          (day.roundingEnabled ? ' (rounded)' : ' (exact)');
+        net.appendChild(dayTotal);
+        shownDailyTotals.add(dayKey);
+      }
       const actions = document.createElement('td');
       actions.className = 'row-actions';
       const details = document.createElement('button');

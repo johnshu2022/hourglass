@@ -34,6 +34,7 @@ const requiredFiles = [
   'payments.html',
   'settings.html',
   'styles.css',
+  'daily-rounding.js',
   'shared.js',
   'dashboard.js',
   'entries.js',

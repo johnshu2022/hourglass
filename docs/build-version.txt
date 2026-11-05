@@ -1,2 +1,2 @@
-Hourglass build 34
-Clean GitHub Pages branch publishing without Jekyll
+Hourglass build 36
+Daily rounded hours displayed in Shift History and PDF reports

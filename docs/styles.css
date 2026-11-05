@@ -205,7 +205,23 @@ td span { display: block; margin-top: 4px; font-size: .76rem; }
 .settings-single-field { max-width: 280px; }
 .job-list { display: grid; gap: 12px; }
 .job-row { display: grid; grid-template-columns: minmax(170px, 1.2fr) minmax(120px, .65fr) minmax(160px, .85fr) 38px; gap: 10px; align-items: end; }
+/* The rounding preference occupies its own line so job removal stays visible. */
+.job-row .job-rounding-option { grid-column: 1 / 4; grid-row: 2; display: flex; align-items: center; gap: 9px; font-size: .81rem; color: var(--muted); cursor: pointer; line-height: 1.45; }
+.job-row .job-rounding-option input { flex: 0 0 auto; accent-color: var(--accent); width: 17px; height: 17px; }
+.job-row .remove-job { grid-column: 4; grid-row: 1; }
 .job-default-field { margin-top: 18px; }
+.reporting-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; margin: 0 0 10px; }
+.reporting-summary div { display: grid; gap: 6px; }
+.reporting-summary span { font-size: .75rem; color: var(--muted); }
+.reporting-summary strong { font-size: 1.16rem; }
+.reporting-note { color: var(--muted); font-size: .78rem; line-height: 1.5; margin: 0 0 14px; }
+.daily-job-details { margin: 0 0 10px; font-size: .83rem; }
+.daily-job-details summary { cursor: pointer; font-weight: 750; padding: 8px 0; }
+.daily-job-list { display: grid; gap: 7px; padding: 8px 0 12px; }
+.daily-job-item { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 9px 12px; border-radius: 9px; background: var(--surface-2, var(--surface)); border: 1px solid var(--line); }
+.daily-job-item small { color: var(--muted); grid-column: 1 / -1; }
+.net-exact-note { display: block; margin-top: 4px; color: var(--muted); font-size: .71rem; line-height: 1.35; }
+
 .pay-preview { display: grid; gap: 8px; position: sticky; top: 20px; }
 .pay-preview > span { margin-top: 11px; color: var(--muted); font-size: .8rem; font-weight: 750; }
 .pay-preview > strong { font-size: 2rem; letter-spacing: -.045em; }
@@ -331,7 +347,9 @@ td span { display: block; margin-top: 4px; font-size: .76rem; }
   .week-chart { gap: 5px; }
   .break-row { grid-template-columns: minmax(0, 1fr); }
   .job-row { grid-template-columns: 1fr; }
-  .job-row .icon-button { grid-column: auto; width: 100%; }
+  .job-row .job-rounding-option, .job-row .remove-job { grid-column: 1; grid-row: auto; }
+  .job-row .icon-button { width: 100%; }
+  .reporting-summary { grid-template-columns: 1fr; }
   .break-row .icon-button { grid-column: auto; width: 100%; }
   .history-heading, .history-actions { align-items: stretch; flex-direction: column; }
   .history-actions { width: 100%; }

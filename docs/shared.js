@@ -363,7 +363,8 @@
       return {
         name: sanitizeText(job && job.name, 80),
         hourlyWage: Math.min(100000, Math.max(0, Number(job && job.hourlyWage) || 0)),
-        weekStartsOn: normalizeWeekStart(job && job.weekStartsOn, weekStartsOn)
+        weekStartsOn: normalizeWeekStart(job && job.weekStartsOn, weekStartsOn),
+        roundDailyToQuarterHour: !!(job && job.roundDailyToQuarterHour === true)
       };
     }).filter(function (job) {
       const key = job.name.toLowerCase();
@@ -788,6 +789,31 @@
     return job ? Math.max(0, Number(job.hourlyWage) || 0) : Math.max(0, Number(currentSettings.hourlyWage) || 0);
   }
 
+  // Reporting groups all shifts on the same local date and job before applying
+  // any optional 15-minute adjustment. Individual shifts always retain exact minutes.
+  function getDailyJobTotals(shifts, settings) {
+    const currentSettings = normalizeSettings(settings || getSettings());
+    const enabled = Object.create(null);
+    currentSettings.jobs.forEach(function (job) {
+      if (job.roundDailyToQuarterHour) enabled['job:' + job.name] = true;
+    });
+    return window.HourglassRounding.calculateDailyJobTotals(shifts.map(function (shift) {
+      return {
+        date: shift.date,
+        jobId: 'job:' + String(shift.job || '').trim(),
+        netMinutes: shiftMinutes(shift)
+      };
+    }), enabled).map(function (day) {
+      return Object.assign({}, day, { job: day.jobId.slice(4) });
+    });
+  }
+
+  function getReportedMinutes(shifts, settings) {
+    return getDailyJobTotals(shifts, settings).reduce(function (sum, day) {
+      return sum + day.displayMinutes;
+    }, 0);
+  }
+
   function getShiftWeekStartsOn(shift, settings) {
     const currentSettings = settings || getSettings();
     const jobName = String(shift && shift.job || '').trim();
@@ -851,6 +877,8 @@
     formatCurrency,
     getJobName,
     getShiftHourlyWage,
+    getDailyJobTotals,
+    getReportedMinutes,
     getShiftWeekStartsOn,
     parseLocalDate,
     dateKey,

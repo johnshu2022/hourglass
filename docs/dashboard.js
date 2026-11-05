@@ -316,6 +316,9 @@
   const awaitingShifts = H.getShiftsAwaitingPayment();
 
   function total(list) {
+    return H.getReportedMinutes(list, settings);
+  }
+  function exactTotal(list) {
     return list.reduce(function (sum, shift) { return sum + H.shiftMinutes(shift); }, 0);
   }
 
@@ -323,7 +326,7 @@
   document.getElementById('day-total').textContent = H.formatMinutes(total(dayShifts));
   document.getElementById('week-total').textContent = H.formatMinutes(total(weekShifts));
   document.getElementById('month-total').textContent = H.formatMinutes(total(monthShifts));
-  document.getElementById('awaiting-total').textContent = H.formatMinutes(total(awaitingShifts));
+  document.getElementById('awaiting-total').textContent = H.formatMinutes(exactTotal(awaitingShifts));
   document.getElementById('day-detail').textContent = dayShifts.length ? dayShifts.length + (dayShifts.length === 1 ? ' shift recorded' : ' shifts recorded') : (H.getNoWorkRecord(today) ? 'Marked as no work today' : 'No hours recorded');
   document.getElementById('week-detail').textContent = weekShifts.length + (weekShifts.length === 1 ? ' shift' : ' shifts');
   document.getElementById('month-detail').textContent = monthShifts.length + (monthShifts.length === 1 ? ' shift' : ' shifts');
@@ -381,7 +384,7 @@
       column.className = 'chart-column';
       const value = document.createElement('span');
       value.className = 'chart-value';
-      value.textContent = item.minutes ? (item.minutes / 60).toFixed(item.minutes % 60 ? 1 : 0) + 'h' : '—';
+      value.textContent = item.minutes ? H.formatDecimalHours(item.minutes) + 'h' : '—';
       const track = document.createElement('div');
       track.className = 'chart-track';
       const bar = document.createElement('i');

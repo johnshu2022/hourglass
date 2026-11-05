@@ -25,7 +25,8 @@
       return {
         name: row.querySelector('.job-name').value.trim(),
         hourlyWage: Math.max(0, Number(row.querySelector('.job-wage').value) || 0),
-        weekStartsOn: row.querySelector('.job-week-start').value
+        weekStartsOn: row.querySelector('.job-week-start').value,
+        roundDailyToQuarterHour: row.querySelector('.job-rounding').checked
       };
     }).filter(function (job) { return job.name; });
   }
@@ -46,6 +47,7 @@
     nameInput.value = job && job.name || '';
     jobWageInput.value = job && job.hourlyWage || '';
     row.querySelector('.job-week-start').value = job && job.weekStartsOn || weekStartInput.value;
+    row.querySelector('.job-rounding').checked = !!(job && job.roundDailyToQuarterHour);
     nameInput.addEventListener('input', function () { updateDefaultOptions(); updatePreview(); });
     jobWageInput.addEventListener('input', updatePreview);
     row.querySelector('.remove-job').addEventListener('click', function () {
@@ -117,7 +119,7 @@
       jobs: jobs,
       defaultJob: defaultJobInput.value
     });
-    message.textContent = 'Settings saved. Job choices and pay estimates have been updated.';
+    message.textContent = 'Settings saved. Daily reporting totals now follow each job’s rounding preference; payment estimates remain exact.';
     updatePreview();
   });
 

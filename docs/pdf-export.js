@@ -38,15 +38,35 @@
     return { text: text, font: bold ? 'F2' : 'F1', size: size || 10 };
   }
 
-  function shiftBlock(shift, H) {
-    const heading = H.formatDate(shift.date, { month: 'short', day: 'numeric', year: 'numeric' }) + ' | ' + H.getJobName(shift);
-    const detail = H.formatTime12(shift.clockIn) + ' - ' + H.formatTime12(shift.clockOut) +
-      ' | Breaks ' + H.formatMinutes(H.breakMinutes(shift)) +
-      ' | Net ' + H.formatDecimalHours(H.shiftMinutes(shift)) + ' hours';
+  // One report group represents one local date + job. Rounding is computed only
+  // once for the whole group, never independently for its component shifts.
+  function groupBlock(day, shifts, H) {
+    const heading = H.formatDate(day.date, { month: 'short', day: 'numeric', year: 'numeric' }) +
+      ' | ' + (day.job || 'Unassigned');
     const block = wrap(heading, 82).map(function (text) { return line(text, true, 11); });
-    wrap(detail, 94).forEach(function (text) { block.push(line(text)); });
-    if (shift.notes) wrap('Notes: ' + shift.notes, 94).forEach(function (text) { block.push(line(text)); });
-    if (shift.image) block.push(line('Image attached to the browser record.', false, 9));
+    const singleShift = shifts.length === 1;
+
+    shifts.forEach(function (shift) {
+      const exactHours = H.formatDecimalHours(H.shiftMinutes(shift));
+      const timeAndBreaks = H.formatTime12(shift.clockIn) + ' - ' + H.formatTime12(shift.clockOut) +
+        ' | Breaks ' + H.formatMinutes(H.breakMinutes(shift));
+      const detail = singleShift
+        ? timeAndBreaks + ' | Net ' + H.formatDecimalHours(day.displayMinutes) + ' hours'
+        : timeAndBreaks + ' | Exact net ' + exactHours + ' hours';
+      wrap(detail, 94).forEach(function (text) { block.push(line(text)); });
+      // The exact underlying duration stays visible and is never rewritten.
+      if (singleShift && day.roundingEnabled) block.push(line('Exact ' + exactHours + ' hours', false, 9));
+      if (shift.notes) wrap('Notes: ' + shift.notes, 94).forEach(function (text) { block.push(line(text)); });
+      if (shift.image) block.push(line('Image attached to the browser record.', false, 9));
+    });
+
+    // With multiple shifts, the individual durations above must remain exact;
+    // otherwise the same daily rounding adjustment could be counted twice.
+    if (!singleShift) {
+      const dailyLabel = 'Daily net ' + H.formatDecimalHours(day.displayMinutes) + ' hours' +
+        (day.roundingEnabled ? ' | Rounded from ' + H.formatDecimalHours(day.actualMinutes) + ' hours' : ' | Exact');
+      wrap(dailyLabel, 90).forEach(function (text) { block.push(line(text, true, 10)); });
+    }
     block.push(line(''));
     return block;
   }
@@ -55,21 +75,45 @@
     const maximumLines = 43;
     const totalMinutes = shifts.reduce(function (sum, shift) { return sum + H.shiftMinutes(shift); }, 0);
     const totalBreaks = shifts.reduce(function (sum, shift) { return sum + H.breakMinutes(shift); }, 0);
-    const pages = [[]];
-    const summary = [
+    const days = H.getDailyJobTotals(shifts);
+    const reportedMinutes = days.reduce(function (sum, day) { return sum + day.displayMinutes; }, 0);
+    const adjustment = reportedMinutes - totalMinutes;
+    const pages = [[
       line('Report summary', true, 11),
-      line(shifts.length + (shifts.length === 1 ? ' shift' : ' shifts') + ' | Net ' + H.formatDecimalHours(totalMinutes) + ' hours | Breaks ' + H.formatMinutes(totalBreaks)),
+      line(shifts.length + (shifts.length === 1 ? ' shift' : ' shifts') + ' | Total ' + H.formatDecimalHours(reportedMinutes) + ' hours | Breaks ' + H.formatMinutes(totalBreaks)),
+      line('Exact net ' + H.formatDecimalHours(totalMinutes) + ' hours | Rounding adjustment ' + (adjustment > 0 ? '+' : '') + adjustment + ' min'),
+      line('Daily totals round once per job and date; recorded clock times and breaks stay exact.', false, 9),
       line('')
-    ];
-    pages[0].push.apply(pages[0], summary);
+    ]];
+    const shiftsByDay = new Map();
     shifts.forEach(function (shift) {
-      const block = shiftBlock(shift, H);
-      let page = pages[pages.length - 1];
-      if (page.length && page.length + block.length > maximumLines) {
-        page = [];
-        pages.push(page);
+      const key = JSON.stringify([shift.date, String(shift.job || '').trim()]);
+      if (!shiftsByDay.has(key)) shiftsByDay.set(key, []);
+      shiftsByDay.get(key).push(shift);
+    });
+    days.forEach(function (day) {
+      const key = JSON.stringify([day.date, day.job]);
+      const groupShifts = shiftsByDay.get(key) || [];
+      const block = groupBlock(day, groupShifts, H);
+      let nextLine = 0;
+      while (nextLine < block.length) {
+        let page = pages[pages.length - 1];
+        const remaining = block.length - nextLine;
+        if (page.length && page.length + remaining > maximumLines && remaining <= maximumLines) {
+          // Prefer keeping each date/job together on a fresh page.
+          page = []; pages.push(page);
+        } else if (page.length >= maximumLines - 2) {
+          page = []; pages.push(page);
+        }
+        if (nextLine && !page.length) {
+          page.push(line(H.formatDate(day.date) + ' | ' + (day.job || 'Unassigned') + ' (continued)', true, 11));
+        }
+        const capacity = maximumLines - page.length;
+        if (!capacity) { pages.push([]); continue; }
+        const part = block.slice(nextLine, nextLine + capacity);
+        page.push.apply(page, part);
+        nextLine += part.length;
       }
-      page.push.apply(page, block);
     });
     return pages;
   }
