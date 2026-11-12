@@ -56,8 +56,6 @@
       wrap(detail, 94).forEach(function (text) { block.push(line(text)); });
       // The exact underlying duration stays visible and is never rewritten.
       if (singleShift && day.roundingEnabled) block.push(line('Exact ' + exactHours + ' hours', false, 9));
-      if (shift.notes) wrap('Notes: ' + shift.notes, 94).forEach(function (text) { block.push(line(text)); });
-      if (shift.image) block.push(line('Image attached to the browser record.', false, 9));
     });
 
     // With multiple shifts, the individual durations above must remain exact;

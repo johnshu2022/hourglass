@@ -1,2 +1,1 @@
-Hourglass build 37
-Per-job off/daily/reporting-period quarter-hour rounding
+Hourglass Build 38.1 — Restore Shift History calendar toolbar layout

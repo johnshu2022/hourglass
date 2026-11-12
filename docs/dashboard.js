@@ -3,6 +3,12 @@
 
   const H = window.Hourglass;
   const shifts = H.getShifts();
+  const reviewSummary = H.getValidationSummary(shifts);
+  document.getElementById('pending-validation-count').textContent = reviewSummary.pending +
+    (reviewSummary.pending === 1 ? ' shift needs verification' : ' shifts need verification');
+  document.getElementById('pending-validation-detail').textContent = reviewSummary.pending
+    ? reviewSummary.validated + ' of ' + reviewSummary.total + ' recorded shifts validated'
+    : (reviewSummary.total ? 'All recorded shifts have been validated.' : 'Recorded shifts will appear here for review.');
   const settings = H.getSettings();
   const now = new Date();
   const today = H.dateKey(now);

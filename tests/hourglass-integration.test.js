@@ -298,3 +298,36 @@ test('PDF paginates many distinct jobs while preserving each job rounding summar
   assert.match(doc,/Nov 4, 2026 \| Job59/);
   assert.match(doc,/\/Count [2-9]/);
 });
+
+
+test('PDF does not disclose saved shift notes or photo attachment indicators', () => {
+  const { H } = launch();
+  H.saveSettings({ jobs: [{ name: 'LCC', roundingMode: 'period' }] });
+  const first = Object.assign(
+    shift('quick', 'LCC', '2026-11-11', '13:14', '17:06'),
+    { notes: 'Recorded with Quick Clock', image: 'data:image/png;base64,AAA=' }
+  );
+  const second = Object.assign(
+    shift('manual', 'LCC', '2026-11-11', '18:00', '18:15'),
+    { notes: 'User-entered confidential memo' }
+  );
+  H.saveShifts([first, second]);
+  const stored = H.getShifts();
+  assert.equal(stored[0].notes, 'Recorded with Quick Clock');
+  assert.ok(stored[0].image, 'saved photo remains in source record');
+  assert.equal(stored[1].notes, 'User-entered confidential memo');
+  const ctx = { window: {}, TextEncoder, Intl };
+  vm.createContext(ctx);
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../docs/pdf-export.js'), 'utf8'), ctx);
+  const report = new TextDecoder().decode(ctx.window.HourglassPdf.buildTimeEntriesPdf(
+    stored, '2026-11-11', '2026-11-11', H, 'LCC'
+  ));
+  assert.doesNotMatch(report, /Notes:/i);
+  assert.doesNotMatch(report, /Recorded with Quick Clock/i);
+  assert.doesNotMatch(report, /confidential memo/i);
+  assert.doesNotMatch(report, /Image attached/i);
+  assert.doesNotMatch(report, /data:image/i);
+  assert.match(report, /Nov 11, 2026 \| LCC/);
+  assert.match(report, /Daily net /);
+  assert.match(report, /Breaks 0h 00m/);
+});

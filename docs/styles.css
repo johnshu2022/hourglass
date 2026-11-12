@@ -368,3 +368,30 @@ td span { display: block; margin-top: 4px; font-size: .76rem; }
   .chart-job-filter { flex: 1; }
   .chart-job-filter select { max-width: none; }
 }
+
+/* Build 38 - shift-level verification */
+.validation-reminder { margin: 0 0 16px; padding: 15px 18px; border: 1px solid var(--line); border-radius: 13px; background: var(--surface); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.validation-reminder > div { display: grid; gap: 5px; min-width: 0; }
+.validation-reminder .eyebrow { margin: 0; }
+.validation-reminder strong { color: var(--text); font-size: 1.02rem; }
+.validation-reminder span:last-child { color: var(--muted); font-size: .78rem; }
+.validation-progress { padding: 11px 14px; margin: 0 0 12px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; font-size: .82rem; font-weight: 750; }
+.validation-filter-field select { min-width: 150px; padding: 9px 11px; font-size: .85rem; }
+.validation-cell { min-width: 170px; }
+.shift-validation-label { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text); font-weight: 750; font-size: .78rem; white-space: nowrap; }
+.shift-validation-label input { width: 17px; height: 17px; flex: 0 0 auto; accent-color: var(--accent); cursor: pointer; }
+.shift-validation-label span { margin: 0; font-size: .78rem; }
+.validation-timestamp { display: block; margin: 5px 0 0 25px; color: var(--muted); font-size: .69rem; line-height: 1.4; }
+@media (max-width: 560px) { .validation-reminder { flex-direction: column; align-items: stretch; } .validation-reminder .button { width: 100%; } .validation-filter-field, .validation-filter-field select { width: 100%; min-width: 0; } }
+
+/* Build 38.1: restore the pre-validation Shift History calendar toolbar layout. */
+.validation-toolbar { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.validation-toolbar .validation-progress { flex: 1 1 230px; margin-bottom: 0; }
+.validation-toolbar .validation-filter-field { width: auto; flex: 0 1 210px; min-width: 170px; }
+.validation-toolbar .validation-filter-field span { font-size: .7rem; font-weight: 750; color: var(--muted); }
+.validation-toolbar .validation-filter-field select { display: block; width: 100%; min-width: 0; }
+@media (max-width: 560px) {
+  .validation-toolbar { align-items: stretch; flex-direction: column; }
+  .validation-toolbar .validation-progress { flex: 0 0 auto; }
+  .validation-toolbar .validation-filter-field { min-width: 0; flex: 0 0 auto; }
+}

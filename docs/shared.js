@@ -196,7 +196,9 @@
       breakMinutesOverride: Math.min(1439, Math.max(0, Number(shift.breakMinutesOverride) || 0)),
       notes: sanitizeText(shift.notes, 240),
       image: sanitizeImage(shift.image),
-      imageMetadata: sanitizeImageMetadata(shift.imageMetadata)
+      imageMetadata: sanitizeImageMetadata(shift.imageMetadata),
+      validated: shift.validated === true && Boolean(sanitizeTimestamp(shift.validatedAt)),
+      validatedAt: shift.validated === true ? sanitizeTimestamp(shift.validatedAt) : ''
     };
   }
 
@@ -253,9 +255,49 @@
     }
   }
 
+  // A review remains valid only while the shift's exact worked-hour fields match.
+  function verificationSignature(shift) {
+    return JSON.stringify([shift.job, shift.date, shift.clockIn, shift.clockOut,
+      shift.clockInTimestamp, shift.clockOutTimestamp, shift.breakMinutesOverride,
+      (shift.breaks || []).map(function (b) { return [b.start, b.end, b.startedAt, b.endedAt]; })]);
+  }
+
   function saveShifts(shifts) {
-    const safeShifts = (Array.isArray(shifts) ? shifts : []).slice(0, MAX_SHIFTS).map(sanitizeShift).filter(Boolean);
+    const previous = new Map(getShifts().map(function (s) { return [s.id, s]; }));
+    const safeShifts = (Array.isArray(shifts) ? shifts : []).slice(0, MAX_SHIFTS).map(function (source, index) {
+      const safe = sanitizeShift(source, index);
+      if (!safe) return null;
+      const old = previous.get(safe.id);
+      if (old && verificationSignature(old) !== verificationSignature(safe)) {
+        safe.validated = false;
+        safe.validatedAt = '';
+      } else if (old && !Object.prototype.hasOwnProperty.call(source, 'validated') &&
+        !Object.prototype.hasOwnProperty.call(source, 'validatedAt')) {
+        // Maintain verification when older callers update only the notes/photo.
+        safe.validated = old.validated;
+        safe.validatedAt = old.validatedAt;
+      }
+      return safe;
+    }).filter(Boolean);
     localStorage.setItem(profileStorageKey(STORAGE_KEY), JSON.stringify(safeShifts));
+  }
+
+  function setShiftValidation(id, checked) {
+    if (typeof checked !== 'boolean') throw new TypeError('Validation must be true or false.');
+    const shifts = getShifts();
+    const index = shifts.findIndex(function (shift) { return shift.id === sanitizeText(id, 100); });
+    if (index < 0) throw new TypeError('Shift not found.');
+    if (shifts[index].validated === checked) return shifts[index];
+    shifts[index].validated = checked;
+    shifts[index].validatedAt = checked ? new Date().toISOString() : '';
+    saveShifts(shifts);
+    return getShifts()[index];
+  }
+
+  function getValidationSummary(shifts) {
+    const list = Array.isArray(shifts) ? shifts : getShifts();
+    const validated = list.filter(function (item) { return item.validated && item.validatedAt; }).length;
+    return { total: list.length, validated: validated, pending: list.length - validated };
   }
 
   function getPayments() {
@@ -857,6 +899,8 @@
     restoreFullBackup,
     getShifts,
     saveShifts,
+    setShiftValidation,
+    getValidationSummary,
     getPayments,
     savePayment,
     deletePayment,

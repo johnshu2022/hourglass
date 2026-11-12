@@ -1,0 +1,3 @@
+# Build 38 — Individual shift validation
+
+Time entries now includes one validation checkbox per shift, a local validation timestamp, and All / Needs review / Validated filters. The dashboard shows outstanding reviews, linked to a filter across all months. Verification follows exact worked time and is independent of rounding and payments. Editing work date, job, clock times, or breaks invalidates an earlier review; editing notes/photos does not. Existing shifts are unvalidated by default. The full JSON backup retains verification metadata while older backups remain supported. CSV/PDF exports remain unchanged from Build 37.1. Verification is a personal reminder, not third-party certification or tamper-proof proof.

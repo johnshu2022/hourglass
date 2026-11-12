@@ -1,4 +1,4 @@
-# Deploy Hourglass Build 37 to GitHub Pages
+# Deploy Hourglass Build 38.1 to GitHub Pages
 
 This archive is arranged for the **root of the Git repository** `johnshu2022/hourglass`.
 After extraction, `docs/index.html` must be at the repository path `docs/index.html`
@@ -25,9 +25,9 @@ Extract the archive locally and commit its contents.
    clone, including hidden `.nojekyll` files. From the folder containing the ZIP:
 
    ```sh
-   mkdir -p hourglass-build37-deploy
-   unzip hourglass-build37-github-pages-deployment.zip -d hourglass-build37-deploy
-   cp -a hourglass-build37-deploy/. ~/hourglass-app/
+   mkdir -p hourglass-build38-1-deploy
+   unzip hourglass-build38-1-calendar-layout-restored.zip -d hourglass-build38-1-deploy
+   cp -a hourglass-build38-1-deploy/. ~/hourglass-app/
    ```
 
    Adjust `~/hourglass-app` to the path of your clone.
@@ -46,7 +46,7 @@ Extract the archive locally and commit its contents.
 
    ```sh
    git add -A
-   git commit -m "Deploy Hourglass Build 37 per-job rounding modes"
+   git commit -m "Build 38.1: Add individual shift validation"
    git push origin main
    ```
 
@@ -68,7 +68,7 @@ From the extracted archive or repository root:
 npx --yes http-server docs -p 8080 -c-1
 ```
 
-Browse http://localhost:8080 and test Settings, Shift History, and PDF Export.
+Browse http://localhost:8080 and test shift validation, timestamps, the Needs review filter, settings, and PDF exports. Confirm an edited clock time clears its validation.
 
 ## Notes
 
@@ -79,6 +79,8 @@ Browse http://localhost:8080 and test Settings, Shift History, and PDF Export.
 - Existing browser-local data is not included in this archive; export a
   Full backup before deploying and retain it securely.
 - Rounding changes reported totals using Off/Daily/Reporting-period per-job settings.
-  Original shifts, backups, CSV exports, and payment calculations stay exact.
+  Original shifts, CSV exports, and payment calculations stay exact.
 - Reports using reporting-period rounding can differ from the sum of the exact daily rows;
   the per-job adjustment reconciles the difference.
+
+- Each shift has a separate validation checkbox in Time entries; its timestamp is preserved in Full JSON backups.

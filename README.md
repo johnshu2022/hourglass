@@ -2,7 +2,7 @@
 
 A responsive, browser-based work-hours tracker built with HTML, CSS, and JavaScript. It records shifts and breaks, calculates net hours for the day, week, and month, displays a seven-day chart, and imports or exports time-card data as CSV or PDF.
 
-This package is Hourglass build 37. The `docs` directory is the single website source used by both GitHub Pages and the Podman container. GitHub Pages publishes it directly from the `main` branch without a repository-managed deployment workflow or Jekyll build.
+This package is Hourglass build 38. The `docs` directory is the single website source used by both GitHub Pages and the Podman container. GitHub Pages publishes it directly from the `main` branch without a repository-managed deployment workflow or Jekyll build.
 
 ## GitHub Pages
 
@@ -29,7 +29,7 @@ CSV imports require `Date`, `Clock In`, and `Clock Out` headers. `Job`, `Break M
 
 Use the prominent **Import hours from a CSV file** panel on the Time entries page. A downloadable template is included in the app.
 
-Use **Export PDF** in Shift History to select an inclusive starting and ending date plus either all jobs or one specific job. The generated report lists each matching shift with its job, clock times, breaks, decimal net hours, notes, and image-attachment status. PDF generation happens entirely in the browser.
+Use **Export PDF** in Shift History to select an inclusive starting and ending date plus either all jobs or one specific job. The generated report lists each matching shift with its job, clock times, breaks, and decimal net hours. Shift notes and photo-attachment indicators are omitted from PDF reports, but remain available in the app and full backups. PDF generation happens entirely in the browser.
 
 Data is stored in the browser's local storage. Export a CSV backup regularly; clearing browser data removes saved shifts.
 
@@ -123,3 +123,11 @@ Run `node scripts/validate.mjs` and `node --test tests/*.test.js` before committ
 In Shift History and PDF reports, days with a single shift display that day’s **rounded net hours** as the primary value and show its exact recorded hours underneath. For days with multiple shifts at the same job, each individual shift retains its exact net time and the rounded daily total is shown **once per date/job** to avoid double-counting. Report summaries show the sum of the individual displayed daily totals, the original exact sum, and the rounding adjustment.
 
 Clock-in and clock-out times, unpaid breaks, CSV exports, full backups, and payment estimates are **unchanged**. In Settings → Jobs, the per-job rounding checkbox still controls whether the daily total is rounded. All changes are compatible with GitHub Pages (`main` → `/docs`).
+
+## Shift validation (Build 38.1)
+
+Check an individual shift in Time entries > Shift history after comparing it with actual hours. The checkbox records a timestamp, and the Needs review filter and dashboard link find unvalidated shifts. Time/job/break edits clear verification; notes and rounding do not. Full JSON backups preserve validations, while existing shifts default to unvalidated. This is a personal checklist rather than tamper-proof certification.
+
+## Build 38.1 layout note
+
+The Shift History month-picker toolbar retains its previous layout. Validation filtering is displayed in a separate review row. See `BUILD-38.1-CHANGES.md`.

@@ -7,6 +7,7 @@
   const template = document.getElementById('break-template');
   const message = document.getElementById('form-message');
   const monthFilter = document.getElementById('month-filter');
+  const validationFilter = document.getElementById('validation-filter');
   const breakMinutesInput = document.getElementById('break-minutes');
   const importFile = document.getElementById('import-file');
   const importMessage = document.getElementById('import-message');
@@ -33,6 +34,11 @@
 
   document.getElementById('work-date').value = H.dateKey(new Date());
   monthFilter.value = H.dateKey(new Date()).slice(0, 7);
+  // Show all months when using the dashboard's unverified-shift link.
+  if (new URLSearchParams(window.location.search).get('validation') === 'pending') {
+    monthFilter.value = '';
+    validationFilter.value = 'pending';
+  }
 
   function addBreak(values) {
     const fragment = template.content.cloneNode(true);
@@ -103,7 +109,7 @@
     const row = document.createElement('tr');
     row.className = 'shift-detail-row hidden';
     const cell = document.createElement('td');
-    cell.colSpan = 6;
+    cell.colSpan = 7;
     const detail = document.createElement('div');
     detail.className = 'shift-detail no-work-detail';
     const timeline = document.createElement('div');
@@ -154,7 +160,9 @@
     remove.type = 'button'; remove.className = 'text-button danger'; remove.textContent = 'Delete';
     remove.addEventListener('click', function () { deleteNoWorkDay(record.id); });
     actions.append(details, remove);
-    row.append(date, job, time, breaks, net, actions);
+    const validationCell = document.createElement('td');
+    validationCell.textContent = '—'; // No-work records do not require validation.
+    row.append(date, job, time, breaks, net, validationCell, actions);
     tbody.appendChild(row);
     const detailRow = createNoWorkDetailRow(record);
     tbody.appendChild(detailRow);
@@ -167,9 +175,14 @@
   }
 
   function renderHistory() {
-    const monthShifts = H.getShifts().filter(function (shift) {
+    const allShifts = H.getShifts();
+    const monthShifts = allShifts.filter(function (shift) {
       return !monthFilter.value || shift.date.startsWith(monthFilter.value);
     });
+    const validation = H.getValidationSummary(monthShifts);
+    document.getElementById('validation-progress').textContent =
+      validation.validated + ' of ' + validation.total + ' shifts validated · ' +
+      validation.pending + (validation.pending === 1 ? ' needs review' : ' need review');
     const report = H.getReportingSummary(monthShifts, settings);
     const daily = report.dailyTotals;
     const dailyByKey = new Map(daily.map(function (day) { return [JSON.stringify([day.date, day.job]), day]; }));
@@ -215,9 +228,13 @@
     if (!report.jobs.length) periodList.textContent = 'No shifts recorded in this range.';
     const tbody = document.getElementById('history-body');
     const empty = document.getElementById('history-empty');
-    const filtered = H.getShifts().map(function (shift) { return { type: 'shift', record: shift }; })
-      .concat(H.getNoWorkRecords().map(function (record) { return { type: 'no-work', record: record }; }))
+    const filtered = allShifts.map(function (shift) { return { type: 'shift', record: shift }; })
+      .concat(validationFilter.value === 'all' ? H.getNoWorkRecords().map(function (record) { return { type: 'no-work', record: record }; }) : [])
       .filter(function (item) { return !monthFilter.value || item.record.date.startsWith(monthFilter.value); })
+      .filter(function (item) {
+        if (item.type !== 'shift' || validationFilter.value === 'all') return true;
+        return validationFilter.value === 'verified' ? item.record.validated : !item.record.validated;
+      })
       .sort(function (a, b) {
         const dateOrder = b.record.date.localeCompare(a.record.date);
         if (dateOrder) return dateOrder;
@@ -226,6 +243,11 @@
       });
     tbody.innerHTML = '';
     empty.classList.toggle('hidden', filtered.length > 0);
+    document.getElementById('history-empty-title').textContent = validationFilter.value === 'pending'
+      ? 'No shifts need review' : validationFilter.value === 'verified' ? 'No validated shifts found' : 'No records found';
+    document.getElementById('history-empty-description').textContent = validationFilter.value === 'all'
+      ? 'Add a shift, mark a no-work day, or choose another month.'
+      : 'Choose another month or change the validation filter.';
     filtered.forEach(function (item) {
       if (item.type === 'no-work') {
         appendNoWorkRow(item.record, tbody);
@@ -285,7 +307,32 @@
       remove.type = 'button'; remove.className = 'text-button danger'; remove.textContent = 'Delete';
       remove.addEventListener('click', function () { deleteShift(shift.id); });
       actions.append(details, edit, remove);
-      row.append(date, job, time, breaks, net, actions);
+      const validationCell = document.createElement('td');
+      validationCell.className = 'validation-cell';
+      const validationLabel = document.createElement('label');
+      validationLabel.className = 'shift-validation-label';
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.checked = shift.validated;
+      checkbox.setAttribute('aria-label', 'Validate shift for ' + H.formatDate(shift.date) +
+        ', ' + H.getJobName(shift) + ', ' + H.formatTime12(shift.clockIn) + ' to ' + H.formatTime12(shift.clockOut));
+      const labelText = document.createElement('span');
+      labelText.textContent = shift.validated ? 'Validated' : 'Needs review';
+      validationLabel.append(checkbox, labelText);
+      validationCell.appendChild(validationLabel);
+      if (shift.validatedAt) {
+        const stamp = document.createElement('small');
+        stamp.className = 'validation-timestamp';
+        stamp.textContent = 'Checked ' + new Intl.DateTimeFormat(undefined, {
+          year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
+        }).format(new Date(shift.validatedAt));
+        validationCell.appendChild(stamp);
+      }
+      checkbox.addEventListener('change', function () {
+        try { H.setShiftValidation(shift.id, checkbox.checked); renderHistory(); }
+        catch (_error) { checkbox.checked = shift.validated; message.textContent = 'Verification could not be saved. Check browser storage.'; }
+      });
+      row.append(date, job, time, breaks, net, validationCell, actions);
       tbody.appendChild(row);
       const detailRow = createDetailRow(shift);
       tbody.appendChild(detailRow);
@@ -359,7 +406,7 @@
     const row = document.createElement('tr');
     row.className = 'shift-detail-row hidden';
     const cell = document.createElement('td');
-    cell.colSpan = 6;
+    cell.colSpan = 7;
     const detail = document.createElement('div');
     detail.className = 'shift-detail';
 
@@ -700,6 +747,7 @@
     message.textContent = 'All recorded time data was deleted.';
   });
   monthFilter.addEventListener('change', renderHistory);
+  validationFilter.addEventListener('change', renderHistory);
   form.addEventListener('submit', function (event) {
     event.preventDefault();
     const shift = readForm();
@@ -707,6 +755,7 @@
     if (error) { message.textContent = error; return; }
     const shifts = H.getShifts();
     const index = shifts.findIndex(function (item) { return item.id === shift.id; });
+    let reviewWasCleared = false;
     if (index >= 0) {
       const previous = shifts[index];
       shift.image = previous.image || '';
@@ -720,13 +769,20 @@
         }
         return item;
       });
+      reviewWasCleared = previous.validated && (
+        previous.job !== shift.job || previous.date !== shift.date ||
+        previous.clockIn !== shift.clockIn || previous.clockOut !== shift.clockOut ||
+        previous.breakMinutesOverride !== shift.breakMinutesOverride ||
+        JSON.stringify(previous.breaks.map(function (b) { return [b.start, b.end]; })) !==
+        JSON.stringify(shift.breaks.map(function (b) { return [b.start, b.end]; }))
+      );
       shifts[index] = shift;
     } else shifts.push(shift);
     H.saveShifts(shifts);
     resetForm();
     monthFilter.value = shift.date.slice(0, 7);
     renderHistory();
-    message.textContent = 'Shift saved.';
+    message.textContent = reviewWasCleared ? 'Shift saved. Validation cleared because hours changed.' : 'Shift saved.';
   });
 
   renderHistory();

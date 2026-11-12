@@ -7,7 +7,7 @@
   <meta name="referrer" content="no-referrer">
   <meta name="description" content="Record and manage work shifts and breaks.">
   <title>Hourglass — Time entries</title>
-  <link rel="stylesheet" href="styles.css?v=37">
+  <link rel="stylesheet" href="styles.css?v=38.1">
 </head>
 <body>
   <header class="site-header">
@@ -136,6 +136,17 @@
           <button class="button danger-button small" id="delete-all" type="button">Delete this user’s data</button>
         </div>
       </div>
+      <div class="validation-toolbar">
+        <div class="validation-progress" id="validation-progress" role="status" aria-live="polite">0 of 0 shifts validated</div>
+        <label class="field validation-filter-field">
+          <span>Review status</span>
+          <select id="validation-filter" aria-label="Filter shifts by validation status">
+            <option value="all">All shifts</option>
+            <option value="pending">Needs review</option>
+            <option value="verified">Validated</option>
+          </select>
+        </label>
+      </div>
       <div class="reporting-summary" id="history-reporting-summary" aria-live="polite">
         <div><span id="history-range-label">Month’s reported hours</span><strong id="history-reported-hours">0h 00m</strong></div>
         <div><span>Exact recorded hours</span><strong id="history-exact-hours">0h 00m</strong></div>
@@ -150,17 +161,18 @@
         <div id="history-daily-totals" class="daily-job-list"></div>
       </details>
       <p class="reporting-note">Daily-mode jobs show rounded day totals. Period-mode jobs show exact daily values, with one adjustment per job in the selected month or full range. CSV exports, original shifts, and payment calculations stay exact. Different date ranges may have different rounding adjustments.</p>
+      <p class="reporting-note">Verification refers to exact shift hours, not rounded reporting totals. Changing a verified shift's date, job, times, or breaks clears its validation. Notes and rounding preferences do not affect validation.</p>
       <div class="table-wrap">
         <table>
           <thead>
-            <tr><th>Date</th><th>Job</th><th>Clock time</th><th>Breaks</th><th>Net hours</th><th><span class="sr-only">Actions</span></th></tr>
+            <tr><th>Date</th><th>Job</th><th>Clock time</th><th>Breaks</th><th>Net hours</th><th>Validation</th><th><span class="sr-only">Actions</span></th></tr>
           </thead>
           <tbody id="history-body"></tbody>
         </table>
       </div>
       <div id="history-empty" class="empty-state hidden">
-        <strong>No records found</strong>
-        <span>Add a shift, mark a no-work day, or choose another month.</span>
+        <strong id="history-empty-title">No records found</strong>
+        <span id="history-empty-description">Add a shift, mark a no-work day, or choose another month.</span>
       </div>
     </section>
   </main>
@@ -218,9 +230,9 @@
   </template>
 
   <script src="daily-rounding.js?v=37"></script>
-  <script src="shared.js?v=37"></script>
+  <script src="shared.js?v=38"></script>
   <script src="profile-ui.js?v=22"></script>
-  <script src="pdf-export.js?v=37"></script>
-  <script src="entries.js?v=37"></script>
+  <script src="pdf-export.js?v=37.1"></script>
+  <script src="entries.js?v=38"></script>
 </body>
 </html>

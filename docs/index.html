@@ -7,7 +7,7 @@
   <meta name="referrer" content="no-referrer">
   <meta name="description" content="A private, browser-based work-hour tracker.">
   <title>Hourglass — Work dashboard</title>
-  <link rel="stylesheet" href="styles.css?v=37">
+  <link rel="stylesheet" href="styles.css?v=38">
 </head>
 <body>
   <header class="site-header">
@@ -116,6 +116,14 @@
       </article>
     </section>
 
+    <section class="validation-reminder" aria-label="Shift validation reminder">
+      <div>
+        <span class="eyebrow">Hours review</span>
+        <strong id="pending-validation-count">0 shifts need verification</strong>
+        <span id="pending-validation-detail">Verify each shift against your worked hours.</span>
+      </div>
+      <a class="button secondary small" href="entry.html?validation=pending#history">Review shifts</a>
+    </section>
     <p class="reporting-note">Today, week, and month each use their own reporting range. Daily-mode jobs round per day; period-mode jobs round once across the card’s range. Chart bars show exact daily hours for period-mode jobs. Awaiting-payment hours stay exact.</p>
     <section class="dashboard-grid">
       <article class="panel">
@@ -170,10 +178,10 @@
   </dialog>
 
   <script src="daily-rounding.js?v=37"></script>
-  <script src="shared.js?v=37"></script>
+  <script src="shared.js?v=38"></script>
   <script src="profile-ui.js?v=22"></script>
   <script src="no-work.js?v=20"></script>
   <script src="image-metadata.js?v=15"></script>
-  <script src="dashboard.js?v=37"></script>
+  <script src="dashboard.js?v=38"></script>
 </body>
 </html>
