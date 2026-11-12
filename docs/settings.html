@@ -7,7 +7,7 @@
   <meta name="referrer" content="no-referrer">
   <meta name="description" content="Configure Hourglass pay and dashboard settings.">
   <title>Hourglass — Settings</title>
-  <link rel="stylesheet" href="styles.css?v=35">
+  <link rel="stylesheet" href="styles.css?v=37">
 </head>
 <body>
   <header class="site-header">
@@ -70,7 +70,7 @@
             </div>
             <button class="button ghost small" id="add-job" type="button">+ Add job</button>
           </div>
-          <p class="settings-description">Set a wage, workweek, and optional daily rounding for each job. Rounding combines that job’s net shifts for a day before rounding to the nearest 15 minutes (8 minutes rounds up). Original shift entries, exports, and payment estimates remain exact.</p>
+          <p class="settings-description">Set each job’s hourly wage, workweek, and reporting method: Off (exact), Daily (round each job/date before summing), or Reporting period (round the job’s combined hours once for the selected date range). All rounding is to the nearest 15 minutes (8 minutes rounds up). Recorded shifts, CSV exports, and payment estimates remain exact.</p>
           <div id="job-list" class="job-list"></div>
           <label class="field settings-single-field job-default-field">
             <span>Default job for new shifts</span>
@@ -168,15 +168,21 @@
         <option value="friday">Friday</option>
         <option value="saturday">Saturday</option>
       </select></label>
-      <label class="job-rounding-option"><input class="job-rounding" type="checkbox"><span>Round this job’s daily total to the nearest 15 minutes</span></label>
+      <label class="field job-rounding-option"><span>Time rounding method</span>
+        <select class="job-rounding-mode">
+          <option value="off">Off — exact hours</option>
+          <option value="daily">Daily — round each job/day</option>
+          <option value="period">Reporting period — round selected range once</option>
+        </select>
+      </label>
       <button class="icon-button remove-job" type="button" aria-label="Remove job">×</button>
     </div>
   </template>
 
-  <script src="daily-rounding.js?v=1"></script>
-  <script src="shared.js?v=35"></script>
+  <script src="daily-rounding.js?v=37"></script>
+  <script src="shared.js?v=37"></script>
   <script src="profile-ui.js?v=22"></script>
-  <script src="settings.js?v=35"></script>
+  <script src="settings.js?v=37"></script>
   <script src="backup.js?v=3"></script>
 </body>
 </html>

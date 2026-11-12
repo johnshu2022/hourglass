@@ -27,7 +27,7 @@ function launch() {
 const shift = (id, job, date, clockIn, clockOut, breakMinutesOverride=0) =>
   ({ id, job, date, clockIn, clockOut, breakMinutesOverride });
 
-test('legacy jobs default to exact minutes; true boolean enables rounding only on that job', () => {
+test('legacy boolean migrations preserve daily; new explicit mode supports per-job selection', () => {
   const { H } = launch();
   const settings = {
     hourlyWage: 0, currency: 'USD', weekStartsOn: 'sunday',
@@ -39,9 +39,17 @@ test('legacy jobs default to exact minutes; true boolean enables rounding only o
   const read = H.getSettings();
   assert.equal(read.jobs[0].roundDailyToQuarterHour, false);
   assert.equal(read.jobs[1].roundDailyToQuarterHour, false, 'string true is not accepted');
-  read.jobs[0].roundDailyToQuarterHour = true;
+  assert.equal(read.jobs[0].roundingMode, 'off');
+  assert.equal(read.jobs[1].roundingMode, 'off');
+  read.jobs[0].roundingMode = 'daily';
   H.saveSettings(read);
   assert.equal(H.getSettings().jobs[0].roundDailyToQuarterHour, true);
+  assert.equal(H.getSettings().jobs[0].roundingMode, 'daily');
+  H.saveSettings({ jobs: [{name:'Cafe', roundDailyToQuarterHour:true}] });
+  assert.equal(H.getSettings().jobs[0].roundingMode, 'daily', 'old boolean true migrates to daily');
+  H.saveSettings({ jobs: [{name:'Cafe', roundDailyToQuarterHour:true, roundingMode:'period'}] });
+  assert.equal(H.getSettings().jobs[0].roundingMode, 'period', 'new setting wins over old boolean');
+  assert.equal(H.getSettings().jobs[0].roundDailyToQuarterHour, false);
 });
 
 test('multiple shifts round only after grouping by date and job, after breaks', () => {
@@ -187,4 +195,106 @@ test('PDF paginates many shifts from the same day without losing daily summary',
   assert.equal((document.match(/Exact net 0\.08 hours/g) || []).length, 60);
   assert.ok(document.includes(String.raw`\(continued\)`));
   assert.match(document, /\/Count [2-9]/);
+});
+
+
+test('period mode reproduces November 5-11 screenshot without rounding each day', () => {
+  const { H } = launch();
+  H.saveSettings({jobs:[{name:'LCC',roundingMode:'period'}]});
+  const shifts=[shift('5','LCC','2026-11-05','11:54','17:31'),
+    shift('7','LCC','2026-11-07','13:00','16:51'),
+    shift('8','LCC','2026-11-08','14:57','18:05'),
+    shift('10','LCC','2026-11-10','14:15','17:00'),
+    shift('11','LCC','2026-11-11','13:14','17:06')];
+  H.saveShifts(shifts);
+  const report=H.getReportingSummary(H.getShifts());
+  assert.equal(report.actualMinutes,1153);
+  assert.equal(report.reportedMinutes,1155);
+  assert.equal(report.adjustmentMinutes,2);
+  assert.deepEqual(Array.from(report.dailyTotals.map(d=>d.displayMinutes)),[337,231,188,165,232]);
+  assert.equal(H.getReportedMinutes(H.getShifts()),1155);
+  H.saveSettings({jobs:[{name:'LCC',roundingMode:'daily'}]});
+  assert.equal(H.getReportedMinutes(H.getShifts()),1140);
+  H.saveSettings({jobs:[{name:'LCC',roundingMode:'off'}]});
+  assert.equal(H.getReportedMinutes(H.getShifts()),1153);
+  assert.equal(H.getShifts()[0].clockIn, '11:54');
+});
+
+test('mixed jobs in selected range keep independent rounding and exact pay', () => {
+  const { H } = launch();
+  H.saveSettings({jobs:[{name:'Daily',roundingMode:'daily', hourlyWage:60},
+    {name:'Period',roundingMode:'period', hourlyWage:60}]});
+  const list=[shift('1','Daily','2026-11-01','09:00','09:08'),
+    shift('2','Daily','2026-11-02','09:00','09:08'),
+    shift('3','Period','2026-11-01','09:00','09:08'),
+    shift('4','Period','2026-11-02','09:00','09:08'),
+    shift('5','','2026-11-01','09:00','09:04')];
+  H.saveShifts(list);
+  const report=H.getReportingSummary(H.getShifts());
+  assert.equal(report.reportedMinutes,49); // Daily 30 + Period 15 + Unassigned 4
+  assert.equal(report.actualMinutes,36);
+  assert.equal(H.getReportedMinutes(list.slice(0,3)),45); // Daily 30 + Period 15
+  const payment=H.savePayment({job:'Period',paymentDate:'2026-11-03',periodStart:'2026-11-01',periodEnd:'2026-11-02',shiftIds:['3','4'],paycheckGross:16,netReceived:16});
+  assert.equal(payment.expectedGross,16);
+});
+
+test('full backup preserves period mode and restores original clock times', () => {
+  const { H } = launch();
+  H.saveSettings({jobs:[{name:'LCC',roundingMode:'period'}]});
+  H.saveShifts([shift('id','LCC','2026-11-11','13:14','17:06')]);
+  const backup=H.createFullBackup();
+  assert.equal(backup.profiles[0].settings.jobs[0].roundingMode,'period');
+  assert.equal(H.validateFullBackup(backup).profiles[0].settings.jobs[0].roundingMode,'period');
+  H.saveSettings({jobs:[]}); H.saveShifts([]);
+  H.restoreFullBackup(backup);
+  assert.equal(H.getSettings().jobs[0].roundingMode,'period');
+  assert.equal(H.getShifts()[0].clockOut,'17:06');
+});
+
+test('PDF reporting period mode shows exact daily rows and one period adjustment', () => {
+  const { H } = launch();
+  H.saveSettings({jobs:[{name:'LCC',roundingMode:'period'}]});
+  const list=[shift('5','LCC','2026-11-05','11:54','17:31'),
+    shift('7','LCC','2026-11-07','13:00','16:51'),
+    shift('8','LCC','2026-11-08','14:57','18:05'),
+    shift('10','LCC','2026-11-10','14:15','17:00'),
+    shift('11','LCC','2026-11-11','13:14','17:06')];
+  const ctx={window:{},TextEncoder,Intl}; vm.createContext(ctx);
+  vm.runInContext(fs.readFileSync(path.join(__dirname,'../docs/pdf-export.js'),'utf8'),ctx);
+  const doc=new TextDecoder().decode(ctx.window.HourglassPdf.buildTimeEntriesPdf(list,'2026-11-05','2026-11-11',H,'LCC'));
+  assert.match(doc,/5 shifts \| Total 19\.25 hours/);
+  assert.match(doc,/Exact net 19\.22 hours \| Rounding adjustment \+2 min/);
+  assert.match(doc,/Period \| Exact 19\.22 hours \| Reported 19\.25 hours \| Adjustment \+2 min/);
+  assert.match(doc,/Net 5\.62 hours/);
+  assert.match(doc,/Net 3\.85 hours/);
+  assert.doesNotMatch(doc,/Net 5\.50 hours/);
+});
+
+test('PDF all-jobs summary labels both daily and period methods', () => {
+  const { H } = launch();
+  H.saveSettings({jobs:[{name:'A',roundingMode:'daily'},{name:'B',roundingMode:'period'}]});
+  const list=[shift('a','A','2026-11-04','09:00','09:08'),
+    shift('b','B','2026-11-04','09:00','09:08'),
+    shift('c','B','2026-11-05','09:00','09:08')];
+  const ctx={window:{},TextEncoder,Intl}; vm.createContext(ctx);
+  vm.runInContext(fs.readFileSync(path.join(__dirname,'../docs/pdf-export.js'),'utf8'),ctx);
+  const doc=new TextDecoder().decode(ctx.window.HourglassPdf.buildTimeEntriesPdf(list,'2026-11-04','2026-11-05',H,'All jobs'));
+  assert.match(doc,/Mixed methods/);
+  assert.match(doc,/A \| Daily/);
+  assert.match(doc,/B \| Period/);
+  assert.match(doc,/Total 0\.50 hours/);
+});
+
+test('PDF paginates many distinct jobs while preserving each job rounding summary', () => {
+  const { H } = launch();
+  const jobs = Array.from({length:60}, (_,i) => ({name:'Job'+String(i).padStart(2,'0'),roundingMode:i%2?'period':'daily'}));
+  H.saveSettings({jobs});
+  const shifts = jobs.map((job,i) => shift(String(i),job.name,'2026-11-04','09:00','09:08'));
+  const ctx={window:{},TextEncoder,Intl}; vm.createContext(ctx);
+  vm.runInContext(fs.readFileSync(path.join(__dirname,'../docs/pdf-export.js'),'utf8'),ctx);
+  const doc=new TextDecoder().decode(ctx.window.HourglassPdf.buildTimeEntriesPdf(shifts,'2026-11-04','2026-11-04',H,'All jobs'));
+  assert.match(doc,/Job00 \| Daily/);
+  assert.match(doc,/Job59 \| Period/);
+  assert.match(doc,/Nov 4, 2026 \| Job59/);
+  assert.match(doc,/\/Count [2-9]/);
 });

@@ -1,4 +1,4 @@
-# Deploy Hourglass Build 36 to GitHub Pages
+# Deploy Hourglass Build 37 to GitHub Pages
 
 This archive is arranged for the **root of the Git repository** `johnshu2022/hourglass`.
 After extraction, `docs/index.html` must be at the repository path `docs/index.html`
@@ -13,8 +13,9 @@ Extract the archive locally and commit its contents.
 2. Check your working tree and update it:
 
    ```sh
-   cd ~/hourglass                  # change to your actual clone path
+   cd ~/hourglass-app               # change to your actual clone path
    git status --short
+   git remote -v                  # must point to johnshu2022/hourglass.git
    git pull --ff-only origin main
    ```
 
@@ -24,17 +25,17 @@ Extract the archive locally and commit its contents.
    clone, including hidden `.nojekyll` files. From the folder containing the ZIP:
 
    ```sh
-   mkdir -p hourglass-build36-deploy
-   unzip hourglass-build36-github-pages-deployment.zip -d hourglass-build36-deploy
-   cp -a hourglass-build36-deploy/. ~/hourglass/
+   mkdir -p hourglass-build37-deploy
+   unzip hourglass-build37-github-pages-deployment.zip -d hourglass-build37-deploy
+   cp -a hourglass-build37-deploy/. ~/hourglass-app/
    ```
 
-   Adjust `~/hourglass` to the path of your clone.
+   Adjust `~/hourglass-app` to the path of your clone.
 
 4. Validate and review:
 
    ```sh
-   cd ~/hourglass
+   cd ~/hourglass-app
    node scripts/validate.mjs
    node --test tests/*.test.js
    git status --short
@@ -45,7 +46,7 @@ Extract the archive locally and commit its contents.
 
    ```sh
    git add -A
-   git commit -m "Deploy Hourglass Build 36 daily rounded reports"
+   git commit -m "Deploy Hourglass Build 37 per-job rounding modes"
    git push origin main
    ```
 
@@ -77,5 +78,7 @@ Browse http://localhost:8080 and test Settings, Shift History, and PDF Export.
   container configurations and are not used by GitHub Pages.
 - Existing browser-local data is not included in this archive; export a
   Full backup before deploying and retain it securely.
-- Rounding changes displayed reporting totals, while original shifts and
-  payment calculations stay exact.
+- Rounding changes reported totals using Off/Daily/Reporting-period per-job settings.
+  Original shifts, backups, CSV exports, and payment calculations stay exact.
+- Reports using reporting-period rounding can differ from the sum of the exact daily rows;
+  the per-job adjustment reconciles the difference.

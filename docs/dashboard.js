@@ -373,7 +373,10 @@
     for (let offset = 6; offset >= 0; offset -= 1) {
       const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() - offset);
       const key = H.dateKey(date);
-      const minutes = total(chartShifts.filter(function (shift) { return shift.date === key; }));
+      // Bars are daily observations: period-rounded jobs display exact day
+      // values here, while week/month headline cards round their full ranges.
+      const minutes = H.getDailyJobTotals(chartShifts.filter(function (shift) { return shift.date === key; }), settings)
+        .reduce(function (sum, day) { return sum + day.displayMinutes; }, 0);
       days.push({ date: date, minutes: minutes });
     }
     const maximum = Math.max(480, ...days.map(function (item) { return item.minutes; }));

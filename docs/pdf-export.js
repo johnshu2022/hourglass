@@ -75,16 +75,35 @@
     const maximumLines = 43;
     const totalMinutes = shifts.reduce(function (sum, shift) { return sum + H.shiftMinutes(shift); }, 0);
     const totalBreaks = shifts.reduce(function (sum, shift) { return sum + H.breakMinutes(shift); }, 0);
-    const days = H.getDailyJobTotals(shifts);
-    const reportedMinutes = days.reduce(function (sum, day) { return sum + day.displayMinutes; }, 0);
-    const adjustment = reportedMinutes - totalMinutes;
-    const pages = [[
-      line('Report summary', true, 11),
-      line(shifts.length + (shifts.length === 1 ? ' shift' : ' shifts') + ' | Total ' + H.formatDecimalHours(reportedMinutes) + ' hours | Breaks ' + H.formatMinutes(totalBreaks)),
-      line('Exact net ' + H.formatDecimalHours(totalMinutes) + ' hours | Rounding adjustment ' + (adjustment > 0 ? '+' : '') + adjustment + ' min'),
-      line('Daily totals round once per job and date; recorded clock times and breaks stay exact.', false, 9),
-      line('')
-    ]];
+    const report = H.getReportingSummary(shifts);
+    const days = report.dailyTotals;
+    const reportedMinutes = report.reportedMinutes;
+    const adjustment = report.adjustmentMinutes;
+    const pages = [[]];
+    function pushSummary(item) {
+      if (pages[pages.length - 1].length >= maximumLines) pages.push([]);
+      pages[pages.length - 1].push(item);
+    }
+    pushSummary(line('Report summary', true, 11));
+    pushSummary(line(shifts.length + (shifts.length === 1 ? ' shift' : ' shifts') + ' | Total ' + H.formatDecimalHours(reportedMinutes) + ' hours | Breaks ' + H.formatMinutes(totalBreaks)));
+    pushSummary(line('Exact net ' + H.formatDecimalHours(totalMinutes) + ' hours | Rounding adjustment ' + (adjustment > 0 ? '+' : '') + adjustment + ' min'));
+    const hasPeriod = report.jobs.some(function (job) { return job.roundingMode === 'period'; });
+    const hasDaily = report.jobs.some(function (job) { return job.roundingMode === 'daily'; });
+    const methodology = hasPeriod && hasDaily
+      ? 'Mixed methods: daily per job/date; period once per job for this selected report range.'
+      : hasPeriod ? 'Reporting period: round each period-mode job once across this selected date range.'
+        : hasDaily ? 'Daily: round each daily-mode job once per date; original times remain exact.'
+          : 'No rounding: original clock times and net durations remain exact.';
+    wrap(methodology, 88).forEach(function (text) { pushSummary(line(text, false, 9)); });
+    report.jobs.forEach(function (job) {
+      const modeName = job.roundingMode === 'daily' ? 'Daily' : job.roundingMode === 'period' ? 'Period' : 'Off';
+      const description = (job.job || 'Unassigned') + ' | ' + modeName + ' | Exact ' +
+        H.formatDecimalHours(job.actualMinutes) + ' hours | Reported ' +
+        H.formatDecimalHours(job.reportedMinutes) + ' hours | Adjustment ' +
+        (job.adjustmentMinutes > 0 ? '+' : '') + job.adjustmentMinutes + ' min';
+      wrap(description, 90).forEach(function (text) { pushSummary(line(text, false, 9)); });
+    });
+    pushSummary(line(''));
     const shiftsByDay = new Map();
     shifts.forEach(function (shift) {
       const key = JSON.stringify([shift.date, String(shift.job || '').trim()]);

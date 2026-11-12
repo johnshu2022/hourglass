@@ -2,7 +2,7 @@
 
 A responsive, browser-based work-hours tracker built with HTML, CSS, and JavaScript. It records shifts and breaks, calculates net hours for the day, week, and month, displays a seven-day chart, and imports or exports time-card data as CSV or PDF.
 
-This package is Hourglass build 36. The `docs` directory is the single website source used by both GitHub Pages and the Podman container. GitHub Pages publishes it directly from the `main` branch without a repository-managed deployment workflow or Jekyll build.
+This package is Hourglass build 37. The `docs` directory is the single website source used by both GitHub Pages and the Podman container. GitHub Pages publishes it directly from the `main` branch without a repository-managed deployment workflow or Jekyll build.
 
 ## GitHub Pages
 
@@ -36,6 +36,21 @@ Data is stored in the browser's local storage. Export a CSV backup regularly; cl
 Use **Full backup and restore** in Settings to download one versioned JSON backup containing every local user and their shifts, jobs, wages, payment history, active clock, no-work days, photos, and image metadata. Restore validates the entire file before replacing current Hourglass data. Earlier version-1 and version-2 backups remain supported. Backup files may contain sensitive personal information and should be stored securely.
 
 Hourglass supports up to 20 local user profiles. Use the user switcher in the header to change profiles or **New user** to create one. The dashboard heading greets the active named user, while the initial **My profile** user keeps the default heading. Every profile has separate shifts, no-work days, active clock state, images, jobs, wage settings, and exports. Existing Hourglass data is automatically assigned to the initial **My profile** user. These are device-local profiles rather than password-protected accounts, so anyone using the same unlocked browser can switch between them.
+
+
+## Per-job rounding (Build 37)
+
+In **Settings → Jobs**, select **Off**, **Daily**, or **Reporting period** independently for each job:
+
+- **Off:** Show exact net minutes with no rounding.
+- **Daily:** Combine all shifts for a job on each calendar date, round that date once to the nearest 15 minutes, then add those rounded days.
+- **Reporting period:** Combine exact net minutes for a job across the *selected reporting date range*, round that job's range once to the nearest 15 minutes. Each daily entry remains exact. The selected range differs by report: a PDF uses its inclusive export dates, Shift History uses its month filter, and dashboard today/week/month cards use their own date ranges.
+
+Rounding ties occur at 8 minutes (0–7 minutes round down, 8–14 round up). For multiple jobs, each job's chosen method applies independently; `Unassigned` remains exact. When a job uses **Reporting period**, the sum of its exact daily rows can differ from its displayed rounded reporting total. The report explicitly includes the period adjustment to reconcile them. Daily chart bars show exact values for period-mode jobs; period cards round the selected span.
+
+Existing jobs with the Build 35/36 **daily rounding** checkbox enabled are automatically interpreted as **Daily**; others stay **Off**. Backups maintain the original clock times, breaks, notes, and shifts; importing old backup settings remains supported. CSV exports and expected gross payment calculations continue to use exact durations, not rounded reporting totals.
+
+Try the project locally with `npx --yes http-server docs -p 8080 -c-1`. Run the checks using `node scripts/validate.mjs` and `node --test tests/*.test.js`.
 
 ## Security
 

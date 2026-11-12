@@ -1,2 +1,2 @@
-Hourglass build 36
-Daily rounded hours displayed in Shift History and PDF reports
+Hourglass build 37
+Per-job off/daily/reporting-period quarter-hour rounding

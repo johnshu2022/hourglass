@@ -7,7 +7,7 @@
   <meta name="referrer" content="no-referrer">
   <meta name="description" content="Record and manage work shifts and breaks.">
   <title>Hourglass — Time entries</title>
-  <link rel="stylesheet" href="styles.css?v=36">
+  <link rel="stylesheet" href="styles.css?v=37">
 </head>
 <body>
   <header class="site-header">
@@ -137,15 +137,19 @@
         </div>
       </div>
       <div class="reporting-summary" id="history-reporting-summary" aria-live="polite">
-        <div><span>Month’s reported hours</span><strong id="history-reported-hours">0h 00m</strong></div>
+        <div><span id="history-range-label">Month’s reported hours</span><strong id="history-reported-hours">0h 00m</strong></div>
         <div><span>Exact recorded hours</span><strong id="history-exact-hours">0h 00m</strong></div>
         <div><span>Rounding adjustment</span><strong id="history-adjustment">0m</strong></div>
       </div>
       <details class="daily-job-details">
+        <summary>See reporting totals by job and rounding method</summary>
+        <div id="history-job-totals" class="daily-job-list"></div>
+      </details>
+      <details class="daily-job-details">
         <summary>See daily totals by job</summary>
         <div id="history-daily-totals" class="daily-job-list"></div>
       </details>
-      <p class="reporting-note">With rounding enabled, single-shift days show rounded daily hours and their exact original. For multiple shifts on one job/date, individual rows stay exact and the daily total is shown once. CSV and payment calculations stay exact.</p>
+      <p class="reporting-note">Daily-mode jobs show rounded day totals. Period-mode jobs show exact daily values, with one adjustment per job in the selected month or full range. CSV exports, original shifts, and payment calculations stay exact. Different date ranges may have different rounding adjustments.</p>
       <div class="table-wrap">
         <table>
           <thead>
@@ -213,10 +217,10 @@
     </div>
   </template>
 
-  <script src="daily-rounding.js?v=1"></script>
-  <script src="shared.js?v=35"></script>
+  <script src="daily-rounding.js?v=37"></script>
+  <script src="shared.js?v=37"></script>
   <script src="profile-ui.js?v=22"></script>
-  <script src="pdf-export.js?v=36"></script>
-  <script src="entries.js?v=36"></script>
+  <script src="pdf-export.js?v=37"></script>
+  <script src="entries.js?v=37"></script>
 </body>
 </html>

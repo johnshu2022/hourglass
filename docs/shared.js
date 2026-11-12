@@ -364,7 +364,12 @@
         name: sanitizeText(job && job.name, 80),
         hourlyWage: Math.min(100000, Math.max(0, Number(job && job.hourlyWage) || 0)),
         weekStartsOn: normalizeWeekStart(job && job.weekStartsOn, weekStartsOn),
-        roundDailyToQuarterHour: !!(job && job.roundDailyToQuarterHour === true)
+        // Canonical 3-mode setting; legacy Build 35/36 boolean migrates to daily.
+        roundingMode: job && ['off', 'daily', 'period'].includes(job.roundingMode)
+          ? job.roundingMode : (job && job.roundDailyToQuarterHour === true ? 'daily' : 'off'),
+        // Kept as a compatibility mirror for older backups/clients.
+        roundDailyToQuarterHour: !!(job && (['off', 'daily', 'period'].includes(job.roundingMode)
+          ? job.roundingMode === 'daily' : job.roundDailyToQuarterHour === true))
       };
     }).filter(function (job) {
       const key = job.name.toLowerCase();
@@ -789,29 +794,37 @@
     return job ? Math.max(0, Number(job.hourlyWage) || 0) : Math.max(0, Number(currentSettings.hourlyWage) || 0);
   }
 
-  // Reporting groups all shifts on the same local date and job before applying
-  // any optional 15-minute adjustment. Individual shifts always retain exact minutes.
-  function getDailyJobTotals(shifts, settings) {
+  // Reporting calculations share the same pure module. Passing only the shifts
+  // in the requested date/job range defines exactly one reporting period.
+  function reportingInputs(shifts, settings) {
     const currentSettings = normalizeSettings(settings || getSettings());
-    const enabled = Object.create(null);
-    currentSettings.jobs.forEach(function (job) {
-      if (job.roundDailyToQuarterHour) enabled['job:' + job.name] = true;
+    const modes = Object.create(null);
+    currentSettings.jobs.forEach(function (job) { modes['job:' + job.name] = job.roundingMode; });
+    // Unassigned and removed jobs remain exact by default.
+    const entries = shifts.map(function (shift) {
+      return { date: shift.date, jobId: 'job:' + String(shift.job || '').trim(), netMinutes: shiftMinutes(shift) };
     });
-    return window.HourglassRounding.calculateDailyJobTotals(shifts.map(function (shift) {
-      return {
-        date: shift.date,
-        jobId: 'job:' + String(shift.job || '').trim(),
-        netMinutes: shiftMinutes(shift)
-      };
-    }), enabled).map(function (day) {
+    return { modes: modes, entries: entries };
+  }
+
+  function getDailyJobTotals(shifts, settings) {
+    const input = reportingInputs(shifts, settings);
+    return window.HourglassRounding.calculateDailyJobTotals(input.entries, input.modes).map(function (day) {
       return Object.assign({}, day, { job: day.jobId.slice(4) });
     });
   }
 
+  function getReportingSummary(shifts, settings) {
+    const input = reportingInputs(shifts, settings);
+    const result = window.HourglassRounding.calculateReportingSummary(input.entries, input.modes);
+    return Object.assign({}, result, {
+      dailyTotals: result.dailyTotals.map(function (day) { return Object.assign({}, day, { job: day.jobId.slice(4) }); }),
+      jobs: result.jobs.map(function (job) { return Object.assign({}, job, { job: job.jobId.slice(4) }); })
+    });
+  }
+
   function getReportedMinutes(shifts, settings) {
-    return getDailyJobTotals(shifts, settings).reduce(function (sum, day) {
-      return sum + day.displayMinutes;
-    }, 0);
+    return getReportingSummary(shifts, settings).reportedMinutes;
   }
 
   function getShiftWeekStartsOn(shift, settings) {
@@ -878,6 +891,7 @@
     getJobName,
     getShiftHourlyWage,
     getDailyJobTotals,
+    getReportingSummary,
     getReportedMinutes,
     getShiftWeekStartsOn,
     parseLocalDate,

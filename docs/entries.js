@@ -170,12 +170,14 @@
     const monthShifts = H.getShifts().filter(function (shift) {
       return !monthFilter.value || shift.date.startsWith(monthFilter.value);
     });
-    const daily = H.getDailyJobTotals(monthShifts, settings);
+    const report = H.getReportingSummary(monthShifts, settings);
+    const daily = report.dailyTotals;
     const dailyByKey = new Map(daily.map(function (day) { return [JSON.stringify([day.date, day.job]), day]; }));
     const shownDailyTotals = new Set();
-    const exact = daily.reduce(function (sum, day) { return sum + day.actualMinutes; }, 0);
-    const reported = daily.reduce(function (sum, day) { return sum + day.displayMinutes; }, 0);
-    const adjustment = reported - exact;
+    const exact = report.actualMinutes;
+    const reported = report.reportedMinutes;
+    const adjustment = report.adjustmentMinutes;
+    document.getElementById('history-range-label').textContent = monthFilter.value ? 'Month’s reported hours' : 'All recorded hours';
     document.getElementById('history-reported-hours').textContent = H.formatMinutes(reported);
     document.getElementById('history-exact-hours').textContent = H.formatMinutes(exact);
     document.getElementById('history-adjustment').textContent = (adjustment > 0 ? '+' : adjustment < 0 ? '−' : '') + Math.abs(adjustment) + 'm';
@@ -187,13 +189,30 @@
       const heading = document.createElement('span');
       heading.textContent = H.formatDate(day.date, { month: 'short', day: 'numeric' }) + ' · ' + (day.job || 'Unassigned');
       const total = document.createElement('strong');
-      total.textContent = H.formatMinutes(day.displayMinutes) + (day.roundingEnabled ? ' rounded' : ' exact');
+      total.textContent = H.formatMinutes(day.displayMinutes) + (day.roundingMode === 'daily' ? ' rounded daily' : ' exact daily');
       const original = document.createElement('small');
       original.textContent = 'Recorded ' + H.formatMinutes(day.actualMinutes);
       row.append(heading, total, original);
       dailyList.appendChild(row);
     });
-    if (!daily.length) dailyList.textContent = 'No shifts recorded for this month.';
+    if (!daily.length) dailyList.textContent = 'No shifts recorded in this range.';
+    const periodList = document.getElementById('history-job-totals');
+    periodList.textContent = '';
+    report.jobs.forEach(function (job) {
+      const row = document.createElement('div');
+      row.className = 'daily-job-item';
+      const name = document.createElement('span');
+      name.textContent = job.job || 'Unassigned';
+      const value = document.createElement('strong');
+      value.textContent = H.formatMinutes(job.reportedMinutes) + ' reported';
+      const detail = document.createElement('small');
+      detail.textContent = (job.roundingMode === 'period' ? 'Period' : job.roundingMode === 'daily' ? 'Daily' : 'Off') +
+        ' · Exact ' + H.formatMinutes(job.actualMinutes) +
+        ' · Adjustment ' + (job.adjustmentMinutes > 0 ? '+' : job.adjustmentMinutes < 0 ? '−' : '') + Math.abs(job.adjustmentMinutes) + 'm';
+      row.append(name, value, detail);
+      periodList.appendChild(row);
+    });
+    if (!report.jobs.length) periodList.textContent = 'No shifts recorded in this range.';
     const tbody = document.getElementById('history-body');
     const empty = document.getElementById('history-empty');
     const filtered = H.getShifts().map(function (shift) { return { type: 'shift', record: shift }; })

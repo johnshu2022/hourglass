@@ -7,7 +7,7 @@
   <meta name="referrer" content="no-referrer">
   <meta name="description" content="A private, browser-based work-hour tracker.">
   <title>Hourglass — Work dashboard</title>
-  <link rel="stylesheet" href="styles.css?v=35">
+  <link rel="stylesheet" href="styles.css?v=37">
 </head>
 <body>
   <header class="site-header">
@@ -116,7 +116,7 @@
       </article>
     </section>
 
-    <p class="reporting-note">Today, week, and month totals are rounded per job and day only when enabled in Settings. Awaiting-payment hours remain exact.</p>
+    <p class="reporting-note">Today, week, and month each use their own reporting range. Daily-mode jobs round per day; period-mode jobs round once across the card’s range. Chart bars show exact daily hours for period-mode jobs. Awaiting-payment hours stay exact.</p>
     <section class="dashboard-grid">
       <article class="panel">
         <div class="panel-heading">
@@ -144,7 +144,7 @@
       </article>
     </section>
 
-    <p class="privacy-note">Daily, weekly, and monthly reporting totals use each job’s rounding preference. Individual shifts, awaiting-payment hours, and pay estimates remain exact. Your data stays in this browser.</p>
+    <p class="privacy-note">Daily, weekly, and monthly reporting totals use each job’s chosen rounding method for the card’s date range. Individual shifts, awaiting-payment hours, and pay estimates remain exact. Your data stays in this browser.</p>
   </main>
 
   <dialog class="confirm-dialog profile-dialog" id="profile-dialog">
@@ -169,11 +169,11 @@
     <img id="zoomed-clock-photo" alt="Enlarged Quick Clock image">
   </dialog>
 
-  <script src="daily-rounding.js?v=1"></script>
-  <script src="shared.js?v=35"></script>
+  <script src="daily-rounding.js?v=37"></script>
+  <script src="shared.js?v=37"></script>
   <script src="profile-ui.js?v=22"></script>
   <script src="no-work.js?v=20"></script>
   <script src="image-metadata.js?v=15"></script>
-  <script src="dashboard.js?v=35"></script>
+  <script src="dashboard.js?v=37"></script>
 </body>
 </html>
